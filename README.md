@@ -1,3 +1,7 @@
+<div align="center">
+
+<img src="assets/daisy_hero.png" alt="Daisy sprite" width="140"/>
+
 # 🌼 Daisy — AI Desktop Pet
 
 A small green blob with a flower on her head who lives on your desktop, walks and jumps around, greets you by time of day, listens to voice commands, and answers questions using a free AI provider of your choice (Google Gemini, Groq, or OpenAI).
@@ -5,6 +9,31 @@ A small green blob with a flower on her head who lives on your desktop, walks an
 ![Python](https://img.shields.io/badge/python-3.9%2B-blue)
 ![PyQt5](https://img.shields.io/badge/PyQt5-GUI-green)
 ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightblue)
+
+</div>
+
+---
+
+## 🎬 See Daisy in Action
+
+<table>
+<tr>
+<td align="center" width="50%">
+<img src="assets/demo_walking.gif" alt="Daisy walking across the desktop" width="380"/><br/>
+<sub>Daisy strolling around a file explorer window — she doesn't care what's open, she'll wander across it anyway.</sub>
+</td>
+<td align="center" width="50%">
+<img src="assets/demo_menu.gif" alt="Daisy right-click menu demo" width="380"/><br/>
+<sub>Right-click for the full menu: push-to-talk, walk/run/jump/sit, ask a question, or set your API key.</sub>
+</td>
+</tr>
+</table>
+
+<p align="center">
+<img src="assets/demo_actions.gif" alt="Daisy performing walk, run, jump and sit animations" width="500"/><br/>
+<sub>A closer look at Daisy's idle, walk, and action animations in real time.</sub>
+</p>
 
 ---
 
@@ -30,6 +59,8 @@ A small green blob with a flower on her head who lives on your desktop, walks an
 
 ## Features
 
+<img src="assets/daisy_hero.png" alt="Daisy sprite" width="70" align="right"/>
+
 - 🖥️ Transparent, always-on-top desktop companion with sprite-based idle, walk, jump, and sit animations
 - 🌅 Greets you with a time-of-day-aware message ("Good morning!", "Good afternoon!", etc.) as soon as she launches
 - 💬 Speech bubble UI plus offline text-to-speech (via `pyttsx3`) so she talks back
@@ -37,6 +68,8 @@ A small green blob with a flower on her head who lives on your desktop, walks an
 - 🧠 AI-powered Q&A backed by **Google Gemini**, **Groq**, or **OpenAI** — auto-detects which provider your key belongs to
 - 🖱️ Drag to move, right-click for the full menu, double-click to type a question, middle-click for quick voice input
 - 🗂️ System tray icon with the same controls, in case her window gets closed accidentally
+
+<br clear="right"/>
 
 ## Requirements
 
@@ -74,6 +107,11 @@ Daisy works with any **one** of these three providers — pick whichever is easi
 
 **Option A — In Daisy's UI (easiest):**
 Right-click Daisy → **"Set API Key (Gemini / OpenAI / Groq)..."** → paste your key → OK. Daisy auto-detects the provider from the key's format (`gsk_...` = Groq, `sk-...` = OpenAI, anything else = Gemini) and saves it to a local `.api_key` file next to `brain.py` so it persists across restarts.
+
+<p align="center">
+<img src="assets/demo_menu.gif" alt="Right-click menu showing Set API Key option" width="320"/><br/>
+<sub>The right-click menu — "Set API Key" is right there alongside Walk / Run / Jump / Sit.</sub>
+</p>
 
 **Option B — As an environment variable:**
 
@@ -119,7 +157,13 @@ She'll appear near the bottom-right of your screen and greet you based on the ti
 - 👋 **"Exit" / "Quit" / "Goodbye"** — says goodbye and closes
 - 💬 **"Ask [question]" / "Daisy [question]" / "What is..."** — answers using her AI brain and speaks the reply
 
+<p align="center">
+<img src="assets/demo_walking.gif" alt="Daisy walking demo" width="360"/>
+</p>
+
 ## How It Works
+
+<img src="assets/daisy_hero.png" alt="Daisy sprite" width="60" align="right"/>
 
 | File | Responsibility |
 |---|---|
@@ -127,6 +171,13 @@ She'll appear near the bottom-right of your screen and greet you based on the ti
 | `voice.py` | Microphone capture, CapsLock push-to-talk listener, voice command parsing, offline TTS (`pyttsx3`) |
 | `brain.py` | Sends questions to Gemini, OpenAI, or Groq (auto-detected from the key), with per-provider model fallback |
 | `main.py` | Wires everything together: system tray, right-click menu, voice worker threads, time-of-day greeting on launch |
+
+<br clear="right"/>
+
+<p align="center">
+<img src="assets/demo_actions.gif" alt="Daisy performing idle, walk and action animations" width="420"/><br/>
+<sub>Idle → walk → action, driven straight from the sprite sheets in <code>Animations/</code>.</sub>
+</p>
 
 ## Project Structure
 
@@ -139,6 +190,7 @@ daisy-desktop-pet/
 ├── test_daisy.py        # Unit tests
 ├── requirements.txt
 ├── README.md
+├── assets/               # Demo GIFs and images used in this README
 └── Animations/          # Sprite sheets (idle, run, jump, fall)
 ```
 
@@ -190,3 +242,15 @@ Pull requests welcome. Please run the test suite before submitting, and keep new
 ## License
 
 MIT — see `LICENSE` for details.
+
+---
+
+<div align="center">
+
+<img src="assets/daisy_hero.png" alt="Daisy sprite" width="90"/>
+
+<img src="assets/demo_menu.gif" alt="Daisy right-click menu" width="260"/>
+
+<sub>Made with 🌼 — a tiny desktop companion that just wants to walk around and answer your questions.</sub>
+
+</div>

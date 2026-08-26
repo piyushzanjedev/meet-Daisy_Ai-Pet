@@ -22,7 +22,7 @@ Daisy isn't just one character — pick your favorite companion from the tray me
 
 <div align="center">
 
-| ![Daisy Cat](assets/pets/cat.png) | ![Pink Monster](assets/pets/pink_monster.png) | ![Owlet Monster](assets/pets/owlet_monster.png) | ![Dude Monster](assets/pets/dude_monster.png) |
+| ![Daisy Cat](Daisy/assets/pets/cat.png) | ![Pink Monster](Daisy/assets/pets/pink_monster.png) | ![Owlet Monster](Daisy/assets/pets/owlet_monster.png) | ![Dude Monster](Daisy/assets/pets/dude_monster.png) |
 |:---:|:---:|:---:|:---:|
 | **🐱 Daisy (Cat)** | **🌸 Pink Monster** | **🦉 Owlet Monster** | **👾 Dude Monster** |
 | Wears her signature daisy flower | Walk · Run · Jump · Sit · Attack · Throw · Hurt | Walk · Run · Jump · Sit · Attack · Throw · Hurt | Walk · Run · Jump · Sit · Attack · Throw · Hurt |

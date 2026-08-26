@@ -1,0 +1,5 @@
+
+# Local secrets and generated builds
+Daisy/.api_key
+Daisy/build/
+Daisy/*.exe

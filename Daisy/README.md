@@ -85,6 +85,18 @@ Hold **CapsLock**, speak, and release:
 - 👋 **"Exit"** / "Quit" / "Close Daisy" / "Goodbye" — Daisy says goodbye and exits
 - 💬 **"Ask [question]"** / "Daisy [question]" / "What is..." — Daisy answers with her AI brain and speaks back in her cute voice!
 
+### ⚡ Jarvis PC Automation Commands (Voice or Text)
+Daisy has a full **Jarvis Desktop Automation Engine** built-in! Say or type:
+- 🚀 **App Launching**: "Open Chrome", "Launch Spotify", "Open VS Code", "Open Calculator", "Play Cyberpunk", "Open Notepad"
+- 🌐 **Websites & Search**: "Open YouTube", "Go to Reddit", "Open GitHub", "Search Python tutorials", "Google latest AI news"
+- 📁 **Special Folders**: "Open Downloads", "Open Documents", "Open Desktop", "Open Pictures", "Open C drive"
+- 🎵 **Media & Volume**: "Volume up", "Volume down", "Mute", "Unmute", "Play", "Pause", "Next track", "Previous song"
+- 📸 **Utilities**: "Take a screenshot" (saves to Pictures), "Empty recycle bin", "What time is it", "What's today's date"
+- 🔒 **System Power**: "Lock screen", "Sleep", "Shutdown" / "Restart" (safeguarded with a 20-second "confirm" check)
+- ❌ **Closing Apps**: "Close Spotify", "Quit Chrome", "Kill Notepad"
+- 🐙 **GitHub Integration**: "Open my top GitHub repo", "Open my GitHub profile" (configurable in Assistant Settings)
+- 🔗 **Multi-Command Chaining**: "Open Chrome and open Spotify", "Take a screenshot and open Pictures"
+
 ### 🎀 Daisy's Cute Voices
 Right-click Daisy and open **"Daisy's Voice 🎀"** to choose between cute girl voice personas:
 - 🌸 **Ana (Super Cute & Playful - Default)** — high-spirited, sweet anime/pet voice

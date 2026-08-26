@@ -19,3 +19,6 @@ pyttsx3>=2.90
 
 # Windows Support (for SAPI5 COM integration)
 pywin32>=306; sys_platform == "win32"
+
+# Desktop Automation & Fuzzy Matching (Jarvis Engine)
+rapidfuzz>=3.0.0

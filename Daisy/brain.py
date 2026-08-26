@@ -58,6 +58,18 @@ SYSTEM_PROMPT = (
 )
 
 
+def get_system_prompt_for_pet(pet_name: str = "Daisy") -> str:
+    """Returns a tailored system prompt incorporating the active pet's cute personality."""
+    clean_name = pet_name.split("(")[0].strip() or "Daisy"
+    return (
+        f"You are {clean_name}, an adorable, cheerful, and sweet desktop pet that lives on the "
+        "user's screen. Answer the user's question in 2-3 short, friendly, and cute sentences. "
+        "Maintain a charming, enthusiastic, and lovable pet personality. Do not use markdown formatting, asterisks, or bullet "
+        "points, since your reply is spoken aloud and shown in a small speech bubble."
+    )
+
+
+
 class BrainError(Exception):
     """Raised when Daisy can't get an answer (missing key, network, access denied, etc.)."""
 
@@ -193,16 +205,17 @@ def get_key_status() -> Tuple[Optional[str], str]:
     return masked, provider_name
 
 
-def _ask_gemini(question: str, key: str, timeout: int = 20) -> str:
+def _ask_gemini(question: str, key: str, timeout: int = 20, system_prompt: Optional[str] = None) -> str:
     """Send question to Google Gemini REST API."""
     custom_model = os.environ.get("DAISY_GEMINI_MODEL")
     models_to_try: List[str] = [custom_model] if custom_model else list(CANDIDATE_GEMINI_MODELS)
+    prompt = system_prompt or SYSTEM_PROMPT
 
     payload = {
         "contents": [
             {
                 "role": "user",
-                "parts": [{"text": f"{SYSTEM_PROMPT}\n\nQuestion: {question}"}],
+                "parts": [{"text": f"{prompt}\n\nQuestion: {question}"}],
             }
         ]
     }
@@ -262,10 +275,11 @@ def _ask_gemini(question: str, key: str, timeout: int = 20) -> str:
     raise BrainError(f"Gemini API Error ({status_code}): {last_error or 'Unable to contact Gemini.'}")
 
 
-def _ask_openai(question: str, key: str, timeout: int = 20) -> str:
+def _ask_openai(question: str, key: str, timeout: int = 20, system_prompt: Optional[str] = None) -> str:
     """Send question to OpenAI Chat Completions REST API."""
     custom_model = os.environ.get("DAISY_OPENAI_MODEL")
     models_to_try: List[str] = [custom_model] if custom_model else list(CANDIDATE_OPENAI_MODELS)
+    prompt = system_prompt or SYSTEM_PROMPT
 
     headers = {
         "Authorization": f"Bearer {key}",
@@ -280,7 +294,7 @@ def _ask_openai(question: str, key: str, timeout: int = 20) -> str:
         payload = {
             "model": model,
             "messages": [
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": prompt},
                 {"role": "user", "content": question},
             ],
             "max_tokens": 150,
@@ -353,10 +367,11 @@ def _fetch_active_groq_models(key: str, timeout: int = 10) -> List[str]:
     return []
 
 
-def _ask_groq(question: str, key: str, timeout: int = 20) -> str:
+def _ask_groq(question: str, key: str, timeout: int = 20, system_prompt: Optional[str] = None) -> str:
     """Send question to Groq's OpenAI-compatible Chat Completions REST API."""
     custom_model = os.environ.get("DAISY_GROQ_MODEL")
     models_to_try: List[str] = [custom_model] if custom_model else list(CANDIDATE_GROQ_MODELS)
+    prompt = system_prompt or SYSTEM_PROMPT
 
     headers = {
         "Authorization": f"Bearer {key}",
@@ -376,7 +391,7 @@ def _ask_groq(question: str, key: str, timeout: int = 20) -> str:
         payload = {
             "model": model,
             "messages": [
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": prompt},
                 {"role": "user", "content": question},
             ],
             "max_tokens": 150,
@@ -463,18 +478,20 @@ def _ask_groq(question: str, key: str, timeout: int = 20) -> str:
     raise BrainError(f"Groq API Error ({status_code}): {last_error or 'Unable to contact Groq.'}")
 
 
-def ask(question: str, api_key: Optional[str] = None, timeout: int = 20) -> str:
-    """Send a question to Gemini or OpenAI and return Daisy's reply as plain text."""
+def ask(question: str, api_key: Optional[str] = None, timeout: int = 20, pet_name: str = "Daisy") -> str:
+    """Send a question to Gemini, OpenAI, or Groq and return the pet's reply as plain text."""
     key = api_key or load_api_key()
     if not key:
         raise BrainError(
             "No API key found. Right-click Daisy -> 'Set API Key...' to configure your OpenAI, Gemini, or Groq key."
         )
 
+    system_prompt = get_system_prompt_for_pet(pet_name)
     provider = detect_provider(key)
     if provider == "openai":
-        return _ask_openai(question, key, timeout=timeout)
+        return _ask_openai(question, key, timeout=timeout, system_prompt=system_prompt)
     elif provider == "groq":
-        return _ask_groq(question, key, timeout=timeout)
+        return _ask_groq(question, key, timeout=timeout, system_prompt=system_prompt)
     else:
-        return _ask_gemini(question, key, timeout=timeout)
+        return _ask_gemini(question, key, timeout=timeout, system_prompt=system_prompt)
+

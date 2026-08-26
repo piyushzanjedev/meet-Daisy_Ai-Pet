@@ -497,6 +497,216 @@ class TestDaisy(unittest.TestCase):
         night_bubble, _ = main.get_time_of_day_greeting(datetime(2026, 8, 15, 2, 0))
         self.assertIn("late", night_bubble.lower())
 
+    def test_pet_voice_profiles(self):
+        import voice
+        self.assertIn("cat", voice.PET_VOICE_PROFILES)
+        self.assertIn("pink_monster", voice.PET_VOICE_PROFILES)
+        self.assertIn("owlet_monster", voice.PET_VOICE_PROFILES)
+        self.assertIn("dude_monster", voice.PET_VOICE_PROFILES)
+
+        # Check that each pet has a unique voice profile
+        cat_voice = voice.get_voice_for_pet("cat")
+        pink_voice = voice.get_voice_for_pet("pink_monster")
+        owlet_voice = voice.get_voice_for_pet("owlet_monster")
+        dude_voice = voice.get_voice_for_pet("dude_monster")
+
+        self.assertEqual(cat_voice["pet_name"], "Daisy")
+        self.assertEqual(pink_voice["pet_name"], "Sakura")
+        self.assertEqual(owlet_voice["pet_name"], "Zephyr")
+        self.assertEqual(dude_voice["pet_name"], "Ziggy")
+
+        self.assertTrue(cat_voice["voice"].startswith("en-"))
+        self.assertTrue(pink_voice["voice"].startswith("en-"))
+        self.assertTrue(owlet_voice["voice"].startswith("en-"))
+        self.assertTrue(dude_voice["voice"].startswith("en-"))
+
+    def test_pet_aesthetic_voice_commands(self):
+        import voice
+        cmd_sakura = voice.parse_voice_command("switch to sakura")
+        self.assertEqual(cmd_sakura["action"], "switch_pet")
+        self.assertEqual(cmd_sakura["pet"], "pink_monster")
+
+        cmd_bubbles = voice.parse_voice_command("choose bubbles")
+        self.assertEqual(cmd_bubbles["action"], "switch_pet")
+        self.assertEqual(cmd_bubbles["pet"], "pink_monster")
+
+        cmd_zephyr = voice.parse_voice_command("change to zephyr")
+        self.assertEqual(cmd_zephyr["action"], "switch_pet")
+        self.assertEqual(cmd_zephyr["pet"], "owlet_monster")
+
+        cmd_ziggy = voice.parse_voice_command("select ziggy")
+        self.assertEqual(cmd_ziggy["action"], "switch_pet")
+        self.assertEqual(cmd_ziggy["pet"], "dude_monster")
+
+    def test_brain_pet_persona(self):
+        prompt_daisy = brain.get_system_prompt_for_pet("Daisy (Cat)")
+        self.assertIn("You are Daisy", prompt_daisy)
+
+        prompt_sakura = brain.get_system_prompt_for_pet("Sakura (Pink Monster)")
+        self.assertIn("You are Sakura", prompt_sakura)
+
+        prompt_zephyr = brain.get_system_prompt_for_pet("Zephyr (Owlet Monster)")
+        self.assertIn("You are Zephyr", prompt_zephyr)
+
+        prompt_ziggy = brain.get_system_prompt_for_pet("Ziggy (Dude Monster)")
+        self.assertIn("You are Ziggy", prompt_ziggy)
+
+    # ─── Jarvis Engine Tests ────────────────────────────────────────────────
+
+    def test_jarvis_fuzzy_matching(self):
+        import jarvis_engine
+        match, score = jarvis_engine.fuzzy_best_match("gogle", ["google", "firefox", "spotify"], threshold=70)
+        self.assertEqual(match, "google")
+        self.assertGreaterEqual(score, 70)
+
+        match_none, _ = jarvis_engine.fuzzy_best_match("nonexistentappnamexyz", ["google", "firefox"], threshold=85)
+        self.assertIsNone(match_none)
+
+    def test_jarvis_website_resolver(self):
+        import jarvis_engine
+        self.assertEqual(jarvis_engine.resolve_website("youtube"), "https://www.youtube.com")
+        self.assertEqual(jarvis_engine.resolve_website("github"), "https://github.com")
+        self.assertEqual(jarvis_engine.resolve_website("reddit.com"), "https://reddit.com")
+        self.assertEqual(jarvis_engine.resolve_website("https://example.com"), "https://example.com")
+
+    def test_jarvis_special_folders(self):
+        import jarvis_engine
+        self.assertEqual(jarvis_engine.resolve_special_folder("downloads"), "shell:Downloads")
+        self.assertEqual(jarvis_engine.resolve_special_folder("documents"), "shell:Personal")
+        self.assertEqual(jarvis_engine.resolve_special_folder("desktop"), "shell:Desktop")
+        self.assertEqual(jarvis_engine.resolve_special_folder("pictures"), "shell:My Pictures")
+        self.assertEqual(jarvis_engine.resolve_special_folder("c drive"), "C:\\")
+
+    def test_jarvis_media_commands(self):
+        import jarvis_engine
+        with patch("subprocess.Popen") as mock_popen:
+            res_vol = jarvis_engine.resolve_media_command("volume up")
+            self.assertIsNotNone(res_vol)
+            self.assertEqual(res_vol["method"], "Media")
+            mock_popen.assert_called_once()
+
+            res_mute = jarvis_engine.resolve_media_command("mute")
+            self.assertIsNotNone(res_mute)
+            self.assertEqual(res_mute["method"], "Media")
+
+            self.assertIsNone(jarvis_engine.resolve_media_command("something unrelated"))
+
+    def test_jarvis_utility_commands(self):
+        import jarvis_engine
+        with patch("subprocess.Popen"):
+            res_ss = jarvis_engine.resolve_utility_command("take a screenshot")
+            self.assertIsNotNone(res_ss)
+            self.assertEqual(res_ss["method"], "Utility")
+
+            res_bin = jarvis_engine.resolve_utility_command("empty recycle bin")
+            self.assertIsNotNone(res_bin)
+            self.assertEqual(res_bin["method"], "Utility")
+
+            res_time = jarvis_engine.resolve_utility_command("what time is it")
+            self.assertIsNotNone(res_time)
+            self.assertEqual(res_time["method"], "Info")
+            self.assertIn("It's", res_time["target"])
+
+            res_date = jarvis_engine.resolve_utility_command("what's today's date")
+            self.assertIsNotNone(res_date)
+            self.assertEqual(res_date["method"], "Info")
+            self.assertIn("Today is", res_date["target"])
+
+    def test_jarvis_system_commands_and_confirmation(self):
+        import jarvis_engine
+        with patch("subprocess.Popen"):
+            # Safe command
+            res_lock = jarvis_engine.resolve_system_command("lock screen")
+            self.assertIsNotNone(res_lock)
+            self.assertEqual(res_lock["method"], "System")
+
+            # Destructive command requires confirmation
+            res_shut = jarvis_engine.resolve_system_command("shutdown")
+            self.assertIsNotNone(res_shut)
+            self.assertEqual(res_shut["method"], "Confirmation")
+            self.assertTrue(jarvis_engine.is_pending_confirmation())
+            self.assertTrue(jarvis_engine.is_confirm_command("confirm"))
+
+            # Confirming the action executes it
+            res_confirm = jarvis_engine.resolve_system_command("confirm")
+            self.assertIsNotNone(res_confirm)
+            self.assertEqual(res_confirm["method"], "System")
+            self.assertFalse(jarvis_engine.is_pending_confirmation())
+
+    def test_jarvis_split_commands(self):
+        import jarvis_engine
+        parts = jarvis_engine.split_commands("open chrome and open spotify")
+        self.assertEqual(parts, ["open chrome", "open spotify"])
+
+        parts_then = jarvis_engine.split_commands("take a screenshot and then open pictures")
+        self.assertEqual(parts_then, ["take a screenshot", "open pictures"])
+
+    def test_jarvis_is_jarvis_command(self):
+        import jarvis_engine
+        self.assertTrue(jarvis_engine.is_jarvis_command("open chrome"))
+        self.assertTrue(jarvis_engine.is_jarvis_command("launch spotify"))
+        self.assertTrue(jarvis_engine.is_jarvis_command("close notepad"))
+        self.assertTrue(jarvis_engine.is_jarvis_command("search python tutorial"))
+        self.assertTrue(jarvis_engine.is_jarvis_command("volume up"))
+        self.assertTrue(jarvis_engine.is_jarvis_command("take a screenshot"))
+        self.assertTrue(jarvis_engine.is_jarvis_command("empty recycle bin"))
+        self.assertTrue(jarvis_engine.is_jarvis_command("lock screen"))
+        self.assertTrue(jarvis_engine.is_jarvis_command("what time is it"))
+        self.assertTrue(jarvis_engine.is_jarvis_command("open my github repo"))
+
+        # General questions should NOT be classified as Jarvis commands
+        self.assertFalse(jarvis_engine.is_jarvis_command("why is the sky blue"))
+        self.assertFalse(jarvis_engine.is_jarvis_command("tell me a story about a kitten"))
+
+    def test_voice_command_jarvis_routing(self):
+        import voice
+        cmd_chrome = voice.parse_voice_command("open chrome")
+        self.assertEqual(cmd_chrome["action"], "jarvis")
+
+        cmd_search = voice.parse_voice_command("search machine learning")
+        self.assertEqual(cmd_search["action"], "jarvis")
+
+        cmd_ss = voice.parse_voice_command("take a screenshot")
+        self.assertEqual(cmd_ss["action"], "jarvis")
+
+        cmd_close_spot = voice.parse_voice_command("close spotify")
+        self.assertEqual(cmd_close_spot["action"], "jarvis")
+
+        # Questions route to ask
+        cmd_ask = voice.parse_voice_command("why do cats purr")
+        self.assertEqual(cmd_ask["action"], "ask")
+
+    def test_voice_command_exit_vs_close(self):
+        import voice
+        cmd_exit = voice.parse_voice_command("exit daisy")
+        self.assertEqual(cmd_exit["action"], "exit")
+
+        cmd_quit = voice.parse_voice_command("quit")
+        self.assertEqual(cmd_quit["action"], "exit")
+
+        cmd_close_app = voice.parse_voice_command("close chrome")
+        self.assertEqual(cmd_close_app["action"], "jarvis")
+
+    def test_jarvis_worker(self):
+        import main
+        with patch("jarvis_engine.execute_jarvis_command", return_value={"message": "Done!", "results": []}):
+            worker = main.JarvisWorker("volume up")
+            mock_ok = MagicMock()
+            worker.finished_ok.connect(mock_ok)
+            worker.run()
+            mock_ok.assert_called_once()
+
+    def test_jarvis_config_persistence(self):
+        import jarvis_engine
+        cfg = jarvis_engine.load_config()
+        self.assertIn("user_name", cfg)
+        self.assertIn("github_username", cfg)
+
+        cfg["user_name"] = "TestUser"
+        jarvis_engine.save_config(cfg)
+        loaded = jarvis_engine.load_config()
+        self.assertEqual(loaded["user_name"], "TestUser")
+
 
 if __name__ == "__main__":
     unittest.main()

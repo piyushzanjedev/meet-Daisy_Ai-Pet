@@ -27,33 +27,41 @@ PET_INFO: Dict[str, Dict[str, Any]] = {
         "folder": "FreeCatCharacterAnimations",
         "has_flower": True,
         "actions": ["walk", "run", "jump", "sit"],
+        "voice_name": "Daisy (Sweet Kitten 🐱)",
+        "aesthetic": "Cottagecore & Cozy",
     },
     "pink_monster": {
         "id": "pink_monster",
-        "name": "Pink Monster",
+        "name": "Sakura (Pink Monster)",
         "icon": "🌸",
         "folder": "1 Pink_Monster",
         "prefix": "Pink_Monster",
         "has_flower": False,
         "actions": ["walk", "run", "jump", "sit", "attack", "throw", "hurt"],
+        "voice_name": "Sakura (Cute Fairy Sprite 🌸)",
+        "aesthetic": "Pastel & Sweet Fairy",
     },
     "owlet_monster": {
         "id": "owlet_monster",
-        "name": "Owlet Monster",
+        "name": "Zephyr (Owlet Monster)",
         "icon": "🦉",
         "folder": "2 Owlet_Monster",
         "prefix": "Owlet_Monster",
         "has_flower": False,
         "actions": ["walk", "run", "jump", "sit", "attack", "throw", "hurt"],
+        "voice_name": "Zephyr (Mystic Owlet 🦉)",
+        "aesthetic": "Celestial & Mystic Sage",
     },
     "dude_monster": {
         "id": "dude_monster",
-        "name": "Dude Monster",
+        "name": "Ziggy (Dude Monster)",
         "icon": "👾",
         "folder": "3 Dude_Monster",
         "prefix": "Dude_Monster",
         "has_flower": False,
         "actions": ["walk", "run", "jump", "sit", "attack", "throw", "hurt"],
+        "voice_name": "Ziggy (Spunky Rascal 👾)",
+        "aesthetic": "Retro Arcade & Spunky Rogue",
     },
 }
 
@@ -111,7 +119,20 @@ def get_pet_font_family() -> str:
 
 def get_config_file_path() -> str:
     """Returns the persistent preference file path for selected pet."""
-    base_dir = os.path.dirname(os.path.abspath(__file__))
+    if getattr(sys, "frozen", False):
+        exe_dir = os.path.dirname(sys.executable)
+        try:
+            test_file = os.path.join(exe_dir, ".test_write")
+            with open(test_file, "w") as f:
+                f.write("test")
+            os.remove(test_file)
+            base_dir = exe_dir
+        except Exception:
+            appdata = os.environ.get("APPDATA") or os.path.expanduser("~")
+            base_dir = os.path.join(appdata, "Daisy")
+            os.makedirs(base_dir, exist_ok=True)
+    else:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(base_dir, ".pet_config")
 
 

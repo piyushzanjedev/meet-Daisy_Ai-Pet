@@ -57,25 +57,30 @@ def transcribe_audio(audio_data: sr.AudioData) -> str:
         raise RuntimeError(f"Speech recognition service error: {exc}") from exc
 
 
+import jarvis_engine
+
+
 def parse_voice_command(text: str) -> Dict[str, Any]:
     """Parses a transcribed string into an actionable Daisy command dictionary."""
     if not text:
         return {"action": "none", "raw": ""}
 
-    t = text.lower().strip()
+    t = text.lower().strip().strip(".!?")
 
-    # 1. Exit / Quit (High priority)
-    if any(k in t for k in ["exit", "quit", "close", "bye", "goodbye", "close daisy", "exit daisy", "stop program"]):
+    # 1. Exit / Quit Daisy (High priority, but distinct from closing other apps)
+    if any(k in t for k in ["goodbye", "exit daisy", "quit daisy", "close daisy", "stop daisy", "stop program", "exit now", "quit now", "bye bye"]):
+        return {"action": "exit", "raw": text}
+    if t in ("exit", "quit", "bye", "close"):
         return {"action": "exit", "raw": text}
 
     # 2. Pet Switching (High priority)
-    if any(k in t for k in ["pink monster", "pink pet", "pink character"]):
+    if any(k in t for k in ["pink monster", "pink pet", "pink character", "sakura", "bubbles", "mochi"]):
         return {"action": "switch_pet", "pet": "pink_monster", "raw": text}
-    if any(k in t for k in ["owlet monster", "owlet", "owl monster", "owl pet"]):
+    if any(k in t for k in ["owlet monster", "owlet", "owl monster", "owl pet", "zephyr", "orion", "pip"]):
         return {"action": "switch_pet", "pet": "owlet_monster", "raw": text}
-    if any(k in t for k in ["dude monster", "dude pet", "dude character"]):
+    if any(k in t for k in ["dude monster", "dude pet", "dude character", "ziggy", "spike", "gizmo"]):
         return {"action": "switch_pet", "pet": "dude_monster", "raw": text}
-    if any(k in t for k in ["switch to cat", "select cat", "choose cat", "cat pet", "daisy cat"]):
+    if any(k in t for k in ["switch to cat", "select cat", "choose cat", "cat pet", "daisy cat", "switch to daisy", "choose daisy", "select daisy", "switch to kitten", "kitten pet"]):
         return {"action": "switch_pet", "pet": "cat", "raw": text}
 
     # 3. Action commands (Attack, Throw, Hurt)
@@ -86,32 +91,34 @@ def parse_voice_command(text: str) -> Dict[str, Any]:
     if any(k in t for k in ["hurt", "ouch", "pain"]):
         return {"action": "hurt", "raw": text}
 
-    # 4. Run (higher priority than walk)
+    # 4. Motion commands
+    words = t.split()
     if any(k in t for k in ["run", "sprint", "run faster", "running", "fast"]):
         return {"action": "run", "speed": 4, "raw": text}
-
-    # 5. Walk
-    if any(k in t for k in ["walk", "walking", "move", "go ahead", "stroll", "go"]):
+    if any(k in t for k in ["walk", "walking", "move", "go ahead", "stroll"]) or "go" in words:
         return {"action": "walk", "speed": 2, "raw": text}
-
-    # 6. Jump
     if any(k in t for k in ["jump", "jumping", "hop", "hopping", "leap", "bounce"]):
         return {"action": "jump", "raw": text}
-
-    # 7. Sit / Rest / Stop / Idle
     if any(k in t for k in ["sit", "sit down", "rest", "stop", "freeze", "idle", "relax", "stay"]):
         return {"action": "sit", "raw": text}
 
-    # 8. Question to Daisy
+    # 5. Explicit "Ask Daisy" prefix
+    if t.startswith("ask daisy") or t.startswith("ask "):
+        q = text.split(" ", 1)[1] if " " in text else text
+        return {"action": "ask", "question": q.strip(" ,:?"), "raw": text}
+
+    # 6. Desktop Automation & PC Commands (Jarvis Engine)
+    if jarvis_engine.is_jarvis_command(text):
+        return {"action": "jarvis", "command": text, "raw": text}
+
+    # 7. Natural question prefixes to Daisy
     for prefix in [
-        "ask daisy", "ask", "daisy", "tell me", "can you tell me",
-        "what is", "why is", "who is", "how do", "how is", "where is", "when did"
+        "tell me", "can you tell me", "what is", "why is", "who is",
+        "how do", "how is", "where is", "when did"
     ]:
         if t.startswith(prefix):
             q = text[len(prefix):].strip(" ,:?")
-            if not q:
-                q = text
-            return {"action": "ask", "question": q, "raw": text}
+            return {"action": "ask", "question": q or text, "raw": text}
 
     # Default to asking question if it looks like a phrase or question
     return {"action": "ask", "question": text, "raw": text}
@@ -275,13 +282,59 @@ class ContinuousVoiceListener(QThread):
 # Background TTS engine instance
 _tts_lock = threading.Lock()
 
-# Curated cute voices tailored for Daisy's adorable pet personality
+# Curated cute voices tailored for each individual pet's aesthetic and personality
+PET_VOICE_PROFILES: Dict[str, Dict[str, Any]] = {
+    "cat": {
+        "pet_name": "Daisy",
+        "voice_name": "Daisy (Sweet Kitten 🐱)",
+        "voice": "en-US-AnaNeural",
+        "pitch": "+7Hz",
+        "rate": "+4%",
+        "gender": "female",
+        "pyttsx3_rate": 180,
+        "description": "Sweet, sunny, bubbly kitten voice",
+    },
+    "pink_monster": {
+        "pet_name": "Sakura",
+        "voice_name": "Sakura (Cute Fairy Sprite 🌸)",
+        "voice": "en-US-AvaNeural",
+        "pitch": "+14Hz",
+        "rate": "+8%",
+        "gender": "female",
+        "pyttsx3_rate": 210,
+        "description": "Ultra-cute, squeaky, high-energy fairy bubble sprite voice",
+    },
+    "owlet_monster": {
+        "pet_name": "Zephyr",
+        "voice_name": "Zephyr (Mystic Owlet 🦉)",
+        "voice": "en-GB-MaisieNeural",
+        "pitch": "+5Hz",
+        "rate": "+0%",
+        "gender": "female",
+        "pyttsx3_rate": 160,
+        "description": "Gentle, fluttery, curious British owlet voice",
+    },
+    "dude_monster": {
+        "pet_name": "Ziggy",
+        "voice_name": "Ziggy (Spunky Rascal 👾)",
+        "voice": "en-US-ChristopherNeural",
+        "pitch": "+12Hz",
+        "rate": "+6%",
+        "gender": "male",
+        "pyttsx3_rate": 195,
+        "description": "Spunky, cheeky, cute anime rascal hero voice",
+    },
+}
+
+# General cute voice options
 CUTE_VOICES: Dict[str, Dict[str, str]] = {
     "ana": {
         "name": "Ana (Super Cute & Playful 🌸)",
         "voice": "en-US-AnaNeural",
         "pitch": "+6Hz",
         "rate": "+4%",
+        "gender": "female",
+        "pyttsx3_rate": 180,
         "description": "Sweet, high-spirited cartoon pet voice",
     },
     "jenny": {
@@ -289,6 +342,8 @@ CUTE_VOICES: Dict[str, Dict[str, str]] = {
         "voice": "en-US-JennyNeural",
         "pitch": "+4Hz",
         "rate": "+3%",
+        "gender": "female",
+        "pyttsx3_rate": 175,
         "description": "Bubbly, friendly and warm young female",
     },
     "emma": {
@@ -296,6 +351,8 @@ CUTE_VOICES: Dict[str, Dict[str, str]] = {
         "voice": "en-US-EmmaNeural",
         "pitch": "+5Hz",
         "rate": "+4%",
+        "gender": "female",
+        "pyttsx3_rate": 175,
         "description": "Gentle, perky and sweet voice",
     },
     "maisie": {
@@ -303,6 +360,8 @@ CUTE_VOICES: Dict[str, Dict[str, str]] = {
         "voice": "en-GB-MaisieNeural",
         "pitch": "+4Hz",
         "rate": "+3%",
+        "gender": "female",
+        "pyttsx3_rate": 160,
         "description": "Cute and cheerful British accent",
     },
     "ava": {
@@ -310,11 +369,20 @@ CUTE_VOICES: Dict[str, Dict[str, str]] = {
         "voice": "en-US-AvaNeural",
         "pitch": "+3Hz",
         "rate": "+2%",
+        "gender": "female",
+        "pyttsx3_rate": 170,
         "description": "Expressive, soft and affectionate voice",
     },
 }
 
-DEFAULT_VOICE_KEY = "ana"
+DEFAULT_VOICE_KEY = "cat"
+
+
+def get_voice_for_pet(pet_id: Optional[str] = None) -> Dict[str, Any]:
+    """Returns the custom cute voice profile for the given pet ID."""
+    if not pet_id:
+        return PET_VOICE_PROFILES["cat"]
+    return PET_VOICE_PROFILES.get(pet_id.lower(), PET_VOICE_PROFILES["cat"])
 
 
 def get_voice_config_path() -> str:
@@ -337,13 +405,13 @@ def get_voice_config_path() -> str:
 
 
 def get_current_voice() -> str:
-    """Loads the currently selected voice key, defaulting to 'ana'."""
+    """Loads the currently selected voice key, defaulting to 'cat'."""
     config_file = get_voice_config_path()
     if os.path.exists(config_file):
         try:
             with open(config_file, "r", encoding="utf-8") as f:
                 saved_key = f.read().strip().lower()
-                if saved_key in CUTE_VOICES:
+                if saved_key in PET_VOICE_PROFILES or saved_key in CUTE_VOICES:
                     return saved_key
         except Exception:
             pass
@@ -353,7 +421,7 @@ def get_current_voice() -> str:
 def set_current_voice(voice_key: str) -> str:
     """Saves the selected voice key and returns it."""
     clean_key = voice_key.strip().lower()
-    if clean_key not in CUTE_VOICES:
+    if clean_key not in PET_VOICE_PROFILES and clean_key not in CUTE_VOICES:
         clean_key = DEFAULT_VOICE_KEY
 
     config_file = get_voice_config_path()
@@ -365,47 +433,54 @@ def set_current_voice(voice_key: str) -> str:
     return clean_key
 
 
-def get_cute_voices() -> Dict[str, Dict[str, str]]:
+def get_cute_voices() -> Dict[str, Dict[str, Any]]:
     """Returns dictionary of available cute voices."""
-    return CUTE_VOICES
+    return {**CUTE_VOICES, **PET_VOICE_PROFILES}
 
 
-def _speak_pyttsx3_fallback(text: str) -> None:
-    """Fallback offline TTS using pyttsx3 with female voice."""
+def _speak_pyttsx3_fallback(text: str, profile: Optional[Dict[str, Any]] = None) -> None:
+    """Fallback offline TTS using pyttsx3 matching pet profile."""
     try:
         engine = pyttsx3.init()
-        # Find female voice (e.g. Zira)
         voices = engine.getProperty("voices")
-        female_voice = None
+        target_gender = (profile or {}).get("gender", "female").lower()
+        selected_voice = None
+
         for v in voices:
             v_name = v.name.lower()
             v_gender = str(getattr(v, "gender", "")).lower()
-            if "zira" in v_name or "female" in v_gender or "eva" in v_name or "hazel" in v_name:
-                female_voice = v.id
-                break
-        if female_voice:
-            engine.setProperty("voice", female_voice)
-        elif voices and len(voices) > 1:
-            engine.setProperty("voice", voices[1].id)
+            if target_gender == "male":
+                if "david" in v_name or "male" in v_gender or "george" in v_name:
+                    selected_voice = v.id
+                    break
+            else:
+                if "zira" in v_name or "female" in v_gender or "eva" in v_name or "hazel" in v_name:
+                    selected_voice = v.id
+                    break
 
-        engine.setProperty("rate", 175)  # Cheerful pace
+        if selected_voice:
+            engine.setProperty("voice", selected_voice)
+        elif voices:
+            engine.setProperty("voice", voices[0].id)
+
+        rate = (profile or {}).get("pyttsx3_rate", 175)
+        engine.setProperty("rate", rate)
         engine.say(text)
         engine.runAndWait()
     except Exception:
         pass
 
 
-def _speak_edge_tts(text: str, voice_key: str) -> bool:
+def _speak_edge_tts(text: str, profile: Dict[str, Any]) -> bool:
     """Synthesizes and plays audio using edge-tts and sounddevice."""
     import asyncio
     import io
     import soundfile as sf
     import edge_tts
 
-    voice_profile = CUTE_VOICES.get(voice_key, CUTE_VOICES[DEFAULT_VOICE_KEY])
-    voice_id = voice_profile["voice"]
-    pitch = voice_profile.get("pitch", "+6Hz")
-    rate = voice_profile.get("rate", "+4%")
+    voice_id = profile.get("voice", "en-US-AnaNeural")
+    pitch = profile.get("pitch", "+6Hz")
+    rate = profile.get("rate", "+4%")
 
     async def _generate():
         comm = edge_tts.Communicate(text, voice_id, pitch=pitch, rate=rate)
@@ -427,28 +502,45 @@ def _speak_edge_tts(text: str, voice_key: str) -> bool:
     return False
 
 
-def speak_async(text: str, voice_key: Optional[str] = None) -> None:
-    """Speaks text asynchronously using Daisy's cute girl voice with fallback."""
+def speak_async(text: str, voice_key: Optional[str] = None, pet_id: Optional[str] = None) -> None:
+    """Speaks text asynchronously using the pet's custom cute voice with fallback."""
     if not text:
         return
 
     # Strip any emojis or speech bubble symbols that shouldn't be read out loud
     clean_text = text
-    for symbol in ["🎤", "🔊", "🔈", "🐾", "🏃", "🐱", "💤", "👋", "🌸", "🎀", "✨", "🌷", "💖"]:
+    for symbol in ["🎤", "🔊", "🔈", "🐾", "🏃", "🐱", "🦉", "🌸", "👾", "💤", "👋", "🎀", "✨", "🌷", "💖", "⚔️", "🪨", "💥", "☀️", "🌼", "🌇", "🌙"]:
         clean_text = clean_text.replace(symbol, "")
     clean_text = clean_text.strip()
     if not clean_text:
         return
 
-    selected_voice = voice_key or get_current_voice()
+    # Resolve profile: pet_id > voice_key > saved voice > default
+    if pet_id:
+        profile = get_voice_for_pet(pet_id)
+    elif voice_key:
+        if voice_key in PET_VOICE_PROFILES:
+            profile = PET_VOICE_PROFILES[voice_key]
+        elif voice_key in CUTE_VOICES:
+            profile = CUTE_VOICES[voice_key]
+        else:
+            profile = PET_VOICE_PROFILES["cat"]
+    else:
+        saved_key = get_current_voice()
+        if saved_key in PET_VOICE_PROFILES:
+            profile = PET_VOICE_PROFILES[saved_key]
+        elif saved_key in CUTE_VOICES:
+            profile = CUTE_VOICES[saved_key]
+        else:
+            profile = PET_VOICE_PROFILES["cat"]
 
     def _worker():
         with _tts_lock:
             # 1. Try cute neural voice via edge-tts
-            success = _speak_edge_tts(clean_text, selected_voice)
-            # 2. Fallback to pyttsx3 female voice if offline or failed
+            success = _speak_edge_tts(clean_text, profile)
+            # 2. Fallback to pyttsx3 voice if offline or failed
             if not success:
-                _speak_pyttsx3_fallback(clean_text)
+                _speak_pyttsx3_fallback(clean_text, profile)
 
     t = threading.Thread(target=_worker, daemon=True)
     t.start()
